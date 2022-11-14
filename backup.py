@@ -61,11 +61,9 @@ class ResticBackup:
 
     def load_overrides(self):
         if 'overrides' in self.config:
-            print('overrides')
             overrides = self.config['overrides']
 
             if 'hostname_fqdn' in overrides:
-                print('fqdn')
                 self.__hostname_fqdn = overrides['hostname_fqdn']
 
     def send_discovery(self):
