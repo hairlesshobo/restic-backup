@@ -1,0 +1,47 @@
+env:
+  #AWS_ACCESS_KEY_ID: 'awsKeyIdHere'
+  #AWS_SECRET_ACCESS_KEY: 'awsSecretKeyHere'
+  RESTIC_PASSWORD: 'repositoryPasswordGoesHere'
+  RESTIC_REPOSITORY: '/path/to/backup'
+  #RESTIC_KEY_HINT: ''
+  RESTIC_PACK_SIZE: '64'
+  RESTIC_PROGRESS_FPS: '1'
+
+backups:
+  home:
+    source:
+      - /home
+      - /root
+    retention: 
+      daily: '7d'
+      weekly: '1m'
+      monthly: '1y'
+      yearly: '75y'
+    #exclude:
+
+  logs:
+    source:
+      - /var/log
+    retention: 
+      daily: '7d'
+      weekly: '1m'
+      monthly: '1y'
+      yearly: '75y'
+    #exclude:
+
+  os:
+    source:
+      - /boot
+      - /etc
+      - /run
+      - /usr
+      - /var
+    retention: 
+      daily: '7d'
+      weekly: '1m'
+      monthly: '1y'
+      yearly: '75y'
+    exclude:
+      - /var/log
+      - /run/docker
+
