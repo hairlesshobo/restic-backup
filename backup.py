@@ -12,7 +12,7 @@ import time
 import yaml
 from pyzabbix import ZabbixMetric, ZabbixSender
 
-restic_path = 'restic'
+restic_path = '/usr/local/bin/restic'
 zabbix_config = '/etc/zabbix/zabbix_agent2.conf'
 config_file_name = 'config.yml'
 
