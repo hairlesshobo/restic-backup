@@ -18,11 +18,6 @@ restic_path = '/usr/local/bin/restic'
 zabbix_config = '/etc/zabbix/zabbix_agent2.conf'
 config_file_name = 'config.yml'
 
-hostname = platform.node() 
-hostname_fqdn = socket.getfqdn()
-
-script_path = os.path.realpath(os.path.dirname(__file__))
-
 logging.basicConfig(level=logging.DEBUG)
 
 def show_usage(error=''):
@@ -43,10 +38,16 @@ def show_usage(error=''):
 
 class ResticBackup:
     def __init__(self):
+        self.__script_path = os.path.realpath(os.path.dirname(__file__))
+        self.__hostname = platform.node()
+        self.__hostname_fqdn = socket.getfqdn()
+
         self.config = self.read_config()
 
+        self.load_overrides()
+
     def read_config(self):
-        config_file_path = os.path.join(script_path, config_file_name)
+        config_file_path = os.path.join(self.__script_path, config_file_name)
 
         if not os.path.exists(config_file_path):
             logging.critical("ERROR: Config file doesn't exist")
@@ -62,12 +63,19 @@ class ResticBackup:
             except yaml.YAMLError as exc:
                 print(exc)
 
+    def load_overrides(self):
+        if 'overrides' in self.config:
+            overrides = self.config['overrides']
+
+            if 'hostname_fqdn' in overrides:
+                self.__hostname_fqdn = overrides['hostname_fqdn']
+
     def send_discovery(self):
         keys = self.config['backups']
 
         discovery = {'data': [{'{#PROFILE}': item} for item in keys]}
         metrics = list()
-        metrics.append(ZabbixMetric(hostname_fqdn,
+        metrics.append(ZabbixMetric(self.__hostname_fqdn,
                                     'restic.backup.profiles',
                                     json.dumps(discovery)))
 
@@ -208,7 +216,7 @@ class ResticBackup:
         
         for kvp in kvp_list:
             for key in kvp.keys():
-                metrics.append(ZabbixMetric(hostname_fqdn, key, kvp[key]))
+                metrics.append(ZabbixMetric(self.__hostname_fqdn, key, kvp[key]))
 
         logging.debug(f'Sending metrics: {metrics}')
         response = ZabbixSender(use_config=zabbix_config).send(metrics)
