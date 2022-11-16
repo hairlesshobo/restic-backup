@@ -12,6 +12,8 @@ import time
 import yaml
 from pyzabbix import ZabbixMetric, ZabbixSender
 
+app_version = '0.9.0'
+
 restic_path = '/usr/local/bin/restic'
 zabbix_config = '/etc/zabbix/zabbix_agent2.conf'
 config_file_name = 'config.yml'
@@ -28,13 +30,15 @@ def show_usage(error=''):
         print(error)
         print()
 
+    print(f"Restic backup version {app_version}")
+    print()
     print("Usage: ./backup.py <mode> [profile]")
     print()
     print("  mode:")
     print("    backup     run a backup job")
     print("    publish    publish the current config to the zabbix server")
     print()
-    print(f"  backup_name: Must be a backup, as configured in {config_file_name}")
+    print(f"  profile: Must be a backup, as configured in {config_file_name}")
     exit(-1)
 
 class ResticBackup:
@@ -73,6 +77,8 @@ class ResticBackup:
         
         result = ZabbixSender(use_config=zabbix_config).send(metrics)
         logging.debug(pprint.pformat(result))
+
+        self.__send_metric([{'restic.backup.version': app_version}])
 
 
     def run_cleanup(self, backup_name):
@@ -134,7 +140,6 @@ class ResticBackup:
 
         command_builder.append('backup')
 
-        # TODO: add check to make sure source exists
         for source in backup_def['source']:
             command_builder.append(source)
 
