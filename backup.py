@@ -135,6 +135,29 @@ class ResticBackup:
 
         backup_def = self.config['backups'][backup_name]
 
+        # pre-hook support
+        if 'hooks' in backup_def and 'pre' in backup_def['hooks']:
+            pre_hook_script = backup_def['hooks']['pre']
+            print(pre_hook_script)
+
+            self.__zbx_send_status(backup_name, 'Running pre-hook')
+            logging.debug(f'Calling pre hook script: {pre_hook_script}')
+
+
+            pre_hook_process = subprocess.Popen(pre_hook_script, 
+                                                shell=True,
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.PIPE)
+
+            out, err = pre_hook_process.communicate()
+            errcode = pre_hook_process.returncode
+
+            if errcode != 0:
+                self.__send_metric([{self.__zbx_hkey(backup_name, 'last_error'): "pre-hook failed"}])
+                self.__zbx_send_status(backup_name, 'Failed')
+                exit(1)
+
+
         command_builder = []
         command_builder.append(restic_path)
         command_builder.append('--json')
@@ -186,6 +209,27 @@ class ResticBackup:
         process.wait()
 
         logging.debug(f'restic return code: {process.returncode}')
+
+        # post hook support
+        if 'hooks' in backup_def and 'post' in backup_def['hooks']:
+            post_hook_script = backup_def['hooks']['post']
+
+            self.__zbx_send_status(backup_name, 'Running post-hook')
+            logging.debug(f'Calling post hook script: {post_hook_script}')
+
+
+            post_hook_process = subprocess.Popen(post_hook_script, 
+                                                 shell=True,
+                                                 stdout=subprocess.PIPE,
+                                                 stderr=subprocess.PIPE)
+
+            out, err = post_hook_process.communicate()
+            errcode = post_hook_process.returncode
+
+            if errcode != 0:
+                self.__send_metric([{self.__zbx_hkey(backup_name, 'last_error'): "post-hook failed"}])
+                self.__zbx_send_status(backup_name, 'Failed')
+                exit(1)
 
         if process.returncode == 0:
             # if there were any errors printed on stderr but the returncode was 0,
